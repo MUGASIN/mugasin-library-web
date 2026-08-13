@@ -1,5 +1,3 @@
-# library_web
-
 # mugasin-library-web
 
 Flutter Web App for the Library Lending System.
