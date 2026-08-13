@@ -1,17 +1,43 @@
 # library_web
 
-A new Flutter project.
+# mugasin-library-web
 
-## Getting Started
+Flutter Web App for the Library Lending System.
 
-This project is a starting point for a Flutter application.
+## Tech Stack
+- Flutter 3.x (Web)
+- Dart
+- HTTP package
 
-A few resources to get you started if this is your first Flutter project:
+## Prerequisites
+- Flutter SDK 3.x
+- Chrome browser
+- API server running at http://127.0.0.1:8000
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Setup
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 1. Clone the repository
+```bash
+git clone https://github.com/MUGASIN/mugasin-library-web.git
+cd mugasin-library-web
+```
+
+### 2. Install dependencies
+```bash
+flutter pub get
+```
+
+### 3. Run the web app
+```bash
+flutter run -d chrome
+```
+
+## Features
+- View all books
+- Add a new book with validation
+- View book details
+
+## Screens
+- Book List Screen — shows all books
+- Add Book Screen — form with validation
+- Book Detail Screen — full book information
