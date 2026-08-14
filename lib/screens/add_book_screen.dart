@@ -21,7 +21,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
   Future<void> submitBook() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => isLoading = true);
-    final success = await ApiService.addBook({
+    final result = await ApiService.addBook({
       'title': titleController.text.trim(),
       'author': authorController.text.trim(),
       'isbn': isbnController.text.trim(),
@@ -30,15 +30,23 @@ class _AddBookScreenState extends State<AddBookScreen> {
       'is_active': isActive,
     });
     setState(() => isLoading = false);
-    if (success && mounted) {
+
+    if (result['success'] && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Book added successfully!'),
           backgroundColor: Colors.green));
       Navigator.pop(context);
     } else {
+      // Show API error (e.g. duplicate)
+      final errors = result['data'];
+      String message = 'Failed to add book';
+      if (errors is Map) {
+        message = errors.values.first is List
+            ? errors.values.first[0]
+            : errors.values.first.toString();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add book'),
-          backgroundColor: Colors.red));
+        SnackBar(content: Text(message), backgroundColor: Colors.red));
     }
   }
 
@@ -95,7 +103,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 title: const Text('Active Status'),
                 value: isActive,
                 onChanged: (val) => setState(() => isActive = val),
-                activeThumbColor: Colors.indigo,
+                activeColor: Colors.indigo,
               ),
               const SizedBox(height: 24),
               SizedBox(

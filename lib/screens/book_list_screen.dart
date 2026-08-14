@@ -14,6 +14,9 @@ class _BookListScreenState extends State<BookListScreen> {
   List<dynamic> books = [];
   bool isLoading = true;
   String? error;
+  String searchQuery = '';
+  String statusFilter = 'all';
+  final searchController = TextEditingController();
 
   @override
   void initState() {
@@ -24,7 +27,10 @@ class _BookListScreenState extends State<BookListScreen> {
   Future<void> loadBooks() async {
     try {
       setState(() { isLoading = true; error = null; });
-      final data = await ApiService.getBooks();
+      final data = await ApiService.getBooks(
+        search: searchQuery,
+        status: statusFilter,
+      );
       setState(() { books = data; isLoading = false; });
     } catch (e) {
       setState(() { error = 'Failed to load books'; isLoading = false; });
@@ -51,61 +57,139 @@ class _BookListScreenState extends State<BookListScreen> {
         backgroundColor: Colors.indigo,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : error != null
-              ? Center(child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(error!, style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 10),
-                    ElevatedButton(onPressed: loadBooks, child: const Text('Retry')),
-                  ],
-                ))
-              : books.isEmpty
-                  ? const Center(child: Text('No books yet. Add one!'))
-                  : RefreshIndicator(
-                      onRefresh: loadBooks,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: books.length,
-                        itemBuilder: (context, index) {
-                          final book = books[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.indigo,
-                                child: Text(
-                                  book['title'][0].toUpperCase(),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              title: Text(book['title'],
-                                style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('${book['author']} • ${book['publication_year']}'),
-                              trailing: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: book['is_active'] ? Colors.green[100] : Colors.red[100],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  book['is_active'] ? 'Active' : 'Inactive',
-                                  style: TextStyle(
-                                    color: book['is_active'] ? Colors.green[800] : Colors.red[800],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              onTap: () => Navigator.push(context,
-                                MaterialPageRoute(
-                                  builder: (_) => BookDetailScreen(bookId: book['id']))),
-                            ),
-                          );
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by title, author or ISBN...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          searchController.clear();
+                          setState(() => searchQuery = '');
+                          loadBooks();
                         },
-                      ),
-                    ),
+                      )
+                    : null,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onChanged: (val) {
+                setState(() => searchQuery = val);
+                loadBooks();
+              },
+            ),
+          ),
+
+          // Filter Buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                const Text('Filter: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(width: 8),
+                _filterChip('All', 'all'),
+                const SizedBox(width: 8),
+                _filterChip('Active', 'active'),
+                const SizedBox(width: 8),
+                _filterChip('Inactive', 'inactive'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Book List
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : error != null
+                    ? Center(child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(error!, style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 10),
+                          ElevatedButton(onPressed: loadBooks, child: const Text('Retry')),
+                        ],
+                      ))
+                    : books.isEmpty
+                        ? const Center(child: Text('No books found.'))
+                        : RefreshIndicator(
+                            onRefresh: loadBooks,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: books.length,
+                              itemBuilder: (context, index) {
+                                final book = books[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.indigo,
+                                      child: Text(
+                                        book['title'][0].toUpperCase(),
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                    title: Text(book['title'],
+                                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    subtitle: Text('${book['author']} • ${book['publication_year']}'),
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: book['is_active'] ? Colors.green[100] : Colors.red[100],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        book['is_active'] ? 'Active' : 'Inactive',
+                                        style: TextStyle(
+                                          color: book['is_active'] ? Colors.green[800] : Colors.red[800],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    onTap: () async {
+                                      await Navigator.push(context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BookDetailScreen(bookId: book['id'])));
+                                      loadBooks();
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, String value) {
+    final isSelected = statusFilter == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() => statusFilter = value);
+        loadBooks();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.indigo : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }
